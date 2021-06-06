@@ -42,23 +42,26 @@ class Kraken:
     USEFUL CLIENT->SERVER METHODS
     '''
     
-    def place__market_order(self, orderType, volume):
+    def place__market_order(self, pair, orderType, volume , price) -> float:
         #krake_request wrapper 
         #places either marker buy or sell order @ specified volume
 
         # Construct the request and print the result
         resp = self.kraken_request('/0/private/AddOrder', {
             "nonce": str(int(1000*time.time())),
-            "ordertype": "market",
+            "ordertype": "limit",
             "type": orderType,
             "volume": volume,
-            "pair": "ADAUSD"
+            "pair": pair,
+            "price": price
         })
-        try:
-            print(resp.json()['result']['descr']['order'])
-        except Exception as e:
-            print(e)
+        print(resp.json())
+        feed = resp.json()['result']['descr']['order']
+        print(feed)
+        return float(feed.split("limit ")[1].split(' ')[0])
+    
 
+        
 
     def get_cash_balance(self, ticker='ZUSD'):
         #retrive cash balance of account
