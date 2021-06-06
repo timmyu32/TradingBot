@@ -25,7 +25,7 @@ class BackTest:
 
             
 
-        def write_candle_data(self) -> None:
+        def write_candle_data(self):
             candles = self.client.get_candles(
                 self.exchange,
                 self.baseAsset,
