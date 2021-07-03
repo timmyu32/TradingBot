@@ -24,13 +24,13 @@ class BotRunner:
         self.HOLDING = False
         self.HOLDING_LONG = False
         self.HOLDING_SHORT = False
-        self.risk_rate = float(input('Risk Rate'))
+        self.risk_rate = float(input('Risk Rate '))
         self.stop_loss = -1     #SENTINAL VALUE  (-1)
         self.stop_loss_rate = 1.15/100
         self.trailing_stop = -1 #SENTINAL VALUE  (-1)
         self.trigger = -1
         self.leverage = LEVERAGE
-        self.time_frame = input('Time Frame? ')
+        self.time_frame = input('Time Frame ')
         self.interval = int(self.time_frame)
         self.time_frame += 'm'
         self.save_graph = False
@@ -50,7 +50,6 @@ class BotRunner:
             except:
                 self.base_prec = requests.post('https://api.kraken.com/0/public/AssetPairs').json()['result'][self.pair]['lot_decimals']
                 self.asset_prec = requests.post('https://api.kraken.com/0/public/AssetPairs').json()['result'][self.pair]['pair_decimals']
-
 
         self.KRAKEN_API_KEY = KRAKEN_API_KEY
         self.KRAKEN_PRIVATE_KEY = KRAKEN_PRIVATE_KEY
@@ -164,7 +163,6 @@ class BotRunner:
         else:
             return False
 
-    
     def trailStop(self, trig_price):
         if self.HOLDING_LONG:
             return round(trig_price * 0.9895, self.asset_prec)
@@ -255,7 +253,7 @@ class BotRunner:
                     self.send_message("long" + str(msg))
                     self.stop_loss= round(close_dataF[-1]* 0.992, self.asset_prec)
                     self.HOLDING_LONG = True
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now()) 
             
             if self.HOLDING_LONG:
@@ -267,7 +265,7 @@ class BotRunner:
                         self.trigger = close_dataF[-1]
                 elif low_dataF[-1] <= self.trailing_stop and high_dataF[-1] >= self.trailing_stop and self.HOLDING_LONG and close_dataF[-1] <= self.trailing_stop:
                     msg = self.client.close_open_position( round(close_dataF[-1], self.asset_prec), 'sell')
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now())
                     self.stop_loss= -1
                     self.sellSignals['dates'].append(dt.now().isoformat())
@@ -279,7 +277,7 @@ class BotRunner:
                 elif low_dataF[-1] <= self.stop_loss and high_dataF[-1] >= self.stop_loss and self.HOLDING_LONG:
                     
                     msg = self.client.close_open_position( round(close_dataF[-1], self.asset_prec), 'sell')
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now())
                     self.stop_loss = -1
                     self.trigger = -1
@@ -305,7 +303,7 @@ class BotRunner:
                     self.send_message("Bull Market bollinger long" + str(msg))
                     self.stop_loss= round(close_dataF[-1]* 0.992, self.asset_prec)
                     self.HOLDING_LONG = True
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now()) 
 
 
@@ -396,7 +394,7 @@ class BotRunner:
                                             price= round(close_dataF[-1], self.asset_prec),
                                             leverage= self.leverage)
 
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now())
                     self.buySignals['dates'].append(dt.now().isoformat())
                     self.buySignals['prices'].append(round(close_dataF[-1], self.asset_prec))
@@ -412,7 +410,7 @@ class BotRunner:
                         self.trigger = close_dataF[-1]
                 elif low_dataF[-1] <= self.trailing_stop and high_dataF[-1] >= self.trailing_stop and close_dataF[-1] >= self.trailing_stop and self.HOLDING_SHORT:
                     msg = self.client.close_open_position( round(close_dataF[-1], self.asset_prec), 'buy')
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now())
                     self.stop_loss= -1
                     self.sellSignals['dates'].append(dt.now().isoformat())
@@ -424,7 +422,7 @@ class BotRunner:
                 elif low_dataF[-1] <= self.stop_loss and high_dataF[-1] >= self.stop_loss and self.HOLDING_SHORT:
                     
                     msg = self.client.close_open_position( round(close_dataF[-1], self.asset_prec), 'buy')
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now())
                     self.stop_loss = -1
                     self.HOLDING_SHORT = False
@@ -449,7 +447,7 @@ class BotRunner:
                     self.send_message("Bear Market Bollinger short" + str(msg))
                     self.stop_loss= round(close_dataF[-1]* 1.0092, self.asset_prec)
                     self.HOLDING_SHORT = True
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now()) 
 
 
@@ -532,7 +530,7 @@ class BotRunner:
                                                 price= round(close_dataF[-1], self.asset_prec),
                                                 leverage= self.leverage)
 
-                        self.accountValue['value'].append(self.client.get_cash_balance())
+                        self.accountValue['value'].append(self.client.get_portfolio_value())
                         self.accountValue['dates'].append(dt.now())
                         self.buySignals['dates'].append(dt.now().isoformat())
                         self.buySignals['prices'].append(round(close_dataF[-1], self.asset_prec))
@@ -558,7 +556,7 @@ class BotRunner:
                         self.buySignals['prices'].append(round(close_dataF[-1], self.asset_prec))
                         self.send_message("BBlow and RSI low...long buy\n" + str(msg))
                         self.HOLDING_LONG = True
-                        self.accountValue['value'].append(self.client.get_cash_balance())
+                        self.accountValue['value'].append(self.client.get_portfolio_value())
                         self.accountValue['dates'].append(dt.now()) 
             
             elif self.HOLDING_LONG and not self.HOLDING_SHORT:
@@ -574,7 +572,7 @@ class BotRunner:
                 if self.HOLDING_LONG:
                     msg = self.client.close_open_position( round(close_dataF[-1], self.asset_prec), 'sell')
                     self.send_message("Closing current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"%")
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now())
                     self.stop_loss= -1
                     self.sellSignals['dates'].append(dt.now().isoformat())
@@ -585,7 +583,7 @@ class BotRunner:
                 elif self.HOLDING_SHORT:
                     msg = self.client.close_open_position( round(close_dataF[-1], self.asset_prec), 'buy')
                     self.send_message("Closing current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"%")
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now())
                     self.stop_loss= -1
                     self.sellSignals['dates'].append(dt.now().isoformat())
@@ -694,7 +692,7 @@ class BotRunner:
                     self.buySignals['prices'].append(round(close_dataF[-1], self.asset_prec))
                     self.send_message("BBlow and RSI low...long buy\n" + str(msg))
                     self.HOLDING_LONG = True
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now()) 
         
             elif self.HOLDING_LONG and not self.HOLDING_SHORT and self.DCA_VOLUME == 0:
@@ -726,7 +724,7 @@ class BotRunner:
                                                 )
                         self.save_graph = True
                         self.VOLUME = 0
-                        self.accountValue['value'].append(self.client.get_cash_balance())
+                        self.accountValue['value'].append(self.client.get_portfolio_value())
                         self.accountValue['dates'].append(dt.now())
                         self.stop_loss = -1
                         self.sellSignals['dates'].append(dt.now().isoformat())
@@ -760,7 +758,7 @@ class BotRunner:
 
                         self.send_message("Closing 60%  of current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"%\nTrailing-Stop @..."+ str(self.trailing_stop) )
                         self.save_graph = True
-                        self.accountValue['value'].append(self.client.get_cash_balance())
+                        self.accountValue['value'].append(self.client.get_portfolio_value())
                         self.accountValue['dates'].append(dt.now())
                         self.DCA_VOLUME = 1
 
@@ -810,9 +808,25 @@ class BotRunner:
                     self.algoStrat2(sma50DF, sma200DF)
 
                     if self.save_graph:
+                        df2 = pd.read_csv("{}{}Profit.csv".format(self.base, self.quote))
+                        dates = list(np.array(df2["Dates"]))
+                        values = list(np.array(df2["Values"]))
+                        for date in self.accountValue['dates']:
+                            dates.append(date)
+                        for value in self.accountValue['value']:
+                            values.append(value)
+                        
+                        data = {'Dates': dates,
+                                'Values': values,
+                                }
+
+                        df3 = pd.DataFrame(data)
+                        df3.to_csv("{}{}Profit.csv".format(self.baseAsset, self.quoteAsset), index = False)
+
+
                         fig2 = go.Figure()
 
-                        fig2.add_scatter(x= self.accountValue['dates'], y= self.accountValue['value'], mode='lines+markers')
+                        fig2.add_scatter(x= dates, y= values, mode='lines+markers')
 
                         fig2.write_html("{}{}Profit.html".format(self.base, self.quote))
                     time.sleep(7)
