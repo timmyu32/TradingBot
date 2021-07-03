@@ -6,10 +6,11 @@ KRAKEN_PRIVATE_KEY = ###
 SHRIMPY_API_KEY = ###
 SHRIMPY_PRIVATE_KEY = ###
 
-WEBHOOK_URL = "https://discord.com/api/webhooks/####'
+WEBHOOK_URL = ###
+
 if __name__ == "__main__":
-    CryptoBot = Runner.BotRunner(#base,
-                                #quote,
+    CryptoBot = Runner.BotRunner('BTC',
+                                'USD',
                                 KRAKEN_API_KEY,
                                 KRAKEN_PRIVATE_KEY,
                                 SHRIMPY_API_KEY,
@@ -18,6 +19,3 @@ if __name__ == "__main__":
                                 )
 
     CryptoBot.run()
-
-
-        
