@@ -38,36 +38,33 @@ class Kraken:
     '''
     Custom Methods
     '''    
-    def place_order(self, pair, orderType, _type, volume , price, leverage=None) -> float:
+    def place_order(self, pair, orderType, _type, volume , price=None, leverage=None) -> float:
         #krake_request wrapper 
         #places either buy or sell order @ specified volume with leverage
         # Construct the request and print the result, return the message
-        if leverage != None:
-            resp = self.kraken_request('/0/private/AddOrder', {
-                "nonce": str(int(1000*time.time())),
-                "ordertype": orderType,  #  market limit stop-loss take-profit stop-loss-limit take-profit-limit settle-position
-                "type": _type, #buy or sell
-                "volume": volume,
-                "pair": pair,
-                "price": price,
-                "leverage": leverage
-            })
-        else:
-            resp = self.kraken_request('/0/private/AddOrder', {
-                "nonce": str(int(1000*time.time())),
-                "ordertype": orderType,  #  market limit stop-loss take-profit stop-loss-limit take-profit-limit settle-position
-                "type": _type, #buy or sell
-                "volume": volume,
-                "pair": pair,
-                "price": price
-            })
+       
+        data= {
+            "nonce": str(int(1000*time.time())),
+            "ordertype": orderType,  #  market limit stop-loss take-profit stop-loss-limit take-profit-limit settle-position
+            "type": _type, #buy or sell
+            "volume": volume,
+            "pair": pair,
+            "price": price,
+            "leverage": leverage
+        }
         
+        if data['price'] == None:
+            data.pop('price')
+        if data['leverage'] == None:
+            data.pop('leverage')
+
+        resp = self.kraken_request('/0/private/AddOrder', data)
         print(resp.json())
-        try:
-            feed = resp.json()['result']['descr']['order']
-            return feed
-        except:
-            raise Exception(resp.json()['error'])
+
+        if len(resp.json()['error']) != 0:
+            raise Exception("Error in APIWrapper.Kraken.place_order()\n" + resp.json()['error'])
+        retVal = resp.json()['result']['descr']['order']
+        return retVal
 
     def get_cash_balance(self, ticker='ZUSD'):
         #retrive cash balance of account
@@ -78,6 +75,19 @@ class Kraken:
             raise Exception("Error in APIWrapper.Kraken.get_cash_balance()\n" + resp.json()['error'])
         retVal =float(resp.json()['result'][ticker]) 
         return retVal
+
+    def get_portfolio_value(self):
+        #retrive cash balance of account
+        resp = self.kraken_request('/0/private/TradeBalance', {
+            "nonce": str(int(1000*time.time())),
+            "asset": "USD"
+        })
+        if len(resp.json()['error']) != 0:
+            print(resp.json()['error'])
+            raise Exception("Error in APIWrapper.Kraken.get_portfolio_value()\n" + resp.json()['error'])
+        retVal = resp.json()['result']['eb'] 
+        #print(resp.json()['result']['eb'] )
+        return float(retVal)
 
     def has_open_positions(self):
         #returns true is there are open positions
@@ -113,15 +123,16 @@ class Kraken:
         return resp.json()['result']['open']
     
     def cancel_order(self):
-
+        
+        resp = ''
         for txid in list(self.get_open_orders()):
             resp = self.kraken_request('/0/private/CancelOrder', {
             "nonce": str(int(1000*time.time())),
             "txid": txid
             })
 
-        if len(resp.json()['error']) != 0:
-            raise Exception("Error in APIWrapper.Kraken.cancel_order()\n" + resp.json()['error'])
+            if len(resp.json()['error']) != 0:
+                raise Exception("Error in APIWrapper.Kraken.cancel_order()\n" + resp.json()['error'])
 
         return resp.json()['result']
 
