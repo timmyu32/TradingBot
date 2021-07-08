@@ -16,6 +16,7 @@ Strategy:
    
    Libraries involved
     -pandas
+    
     -pandas_ta (Technical analysis)
     -numoy
     -requests
