@@ -5,7 +5,6 @@ from pandas_ta.momentum.rsi import rsi
 from requests.api import request
 import OOPBT
 import APIWrapper
-#^not sure why VSCode doesn't like this
 from datetime import datetime as dt
 from datetime import timedelta as td
 import pandas as pd
@@ -26,7 +25,9 @@ class BotRunner:
         self.HOLDING_SHORT = False
         self.risk_rate = float(input('Risk Rate '))
         self.stop_loss = -1     #SENTINAL VALUE  (-1)
-        self.stop_loss_rate = 1.15/100
+        self.stop_loss_rate = float(input("Stop loss percentanege "))
+        assert self.stop_loss_rate > 0
+        self.stop_loss_rate = self.stop_loss_rate /100
         self.trailing_stop = -1 #SENTINAL VALUE  (-1)
         self.trigger = -1
         self.leverage = LEVERAGE
@@ -71,7 +72,7 @@ class BotRunner:
                     'value':[]
                     }
 
-    def write_candles(self):
+    def write_candles(self) -> None:
         self.backTestCSV = OOPBT.BackTest(self.SHRIMPY_API_KEY,
                 self.SHRIMPY_PRIVATE_KEY, 
                 'coinbasepro', 
@@ -82,7 +83,7 @@ class BotRunner:
                 )
         self.backTestCSV.write_candle_data()
 
-    def send_message(self, msg):
+    def send_message(self, msg) -> None:
         print(msg)
         self.webhook.send(msg)
 
@@ -133,6 +134,7 @@ class BotRunner:
             if rsidf.iloc[-3] < 35:
                 return True
 
+
         return retval
     
     def rsi_crossHIGH(self, rsidf) -> bool:
@@ -157,20 +159,20 @@ class BotRunner:
         N = 10
         return (cdf[-1]/ cdf[(-1*N)]) - 1
 
-    def bull_market(self, sma50, sma200):
+    def bull_market(self, sma50, sma200) -> float:
         if sma50.iloc[-1] >= sma200.iloc[-1]:
             return True
         else:
             return False
 
-    def trailStop(self, trig_price):
+    def trailStop(self, trig_price) -> float:
         if self.HOLDING_LONG:
             return round(trig_price * 0.9895, self.asset_prec)
                 
         elif self.HOLDING_SHORT:
             return round(trig_price * 1.01, self.asset_prec)
 
-    def bull_strategy(self):
+    def bull_strategy(self) -> None:
     
         df = pd.read_csv('{}{}Data.csv'.format(self.base, self.quote))
         #datesF = np.array(df['Dates'])
@@ -237,9 +239,9 @@ class BotRunner:
                 
                 if self.HOLDING_LONG == False and self.client.has_open_positions() == False:
                     if self.leverage != None:
-                        vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
+                        vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
                     else:
-                        vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) 
+                        vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) 
                     
                     print('Volume  = {}'.format(vol))
                     msg = self.client.place_order(pair= self.pair,
@@ -286,9 +288,9 @@ class BotRunner:
             elif not self.HOLDING_LONG:
                 if self.bblow(bbandsDF, low_dataF) and self.rsi_crossLOW(rsiDF):
                     if self.leverage != None:
-                        vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
+                        vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
                     else:
-                        vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) 
+                        vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) 
                     
                     print('Volume  = {}'.format(vol))
                     msg = self.client.place_order(pair= self.pair,
@@ -312,7 +314,7 @@ class BotRunner:
             print("------------------------------------")
         strat()
 
-    def bear_strategy(self):
+    def bear_strategy(self) -> None:
         df = pd.read_csv('{}{}Data.csv'.format(self.base, self.quote))
         #datesF = np.array(df['Dates'])
         high_dataF = np.array(df['High Data'])
@@ -381,9 +383,9 @@ class BotRunner:
                     self.stop_loss = round(close_dataF[-1] * 1.0092, self.asset_prec)
 
                     if self.leverage != None:
-                        vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
+                        vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
                     else:
-                        vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec)    
+                        vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec)    
 
                     
                     print('Volume  = {}'.format(vol))
@@ -430,9 +432,9 @@ class BotRunner:
             elif not self.HOLDING_SHORT:
                 if self.bbhigh(bbandsDF, high_dataF) and self.rsi_crossHIGH(rsiDF):
                     if self.leverage != None:
-                        vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
+                        vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
                     else:
-                        vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) 
+                        vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) 
                     
                     print('Volume  = {}'.format(vol))
                     msg = self.client.place_order(pair= self.pair,
@@ -455,7 +457,7 @@ class BotRunner:
             print("------------------------------------")
         strat()
 
-    def algoStrat(self, sma50, sma200):
+    def algoStrat(self, sma50, sma200) -> None:
         df = pd.read_csv('{}{}Data.csv'.format(self.base, self.quote))
         high_dataF = np.array(df['High Data'])
         low_dataF = np.array(df['Low Data'])
@@ -518,9 +520,9 @@ class BotRunner:
                         self.stop_loss = round(close_dataF[-1] * (1 + self.stop_loss_rate), self.asset_prec)
 
                         if self.leverage != None:
-                            vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
+                            vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
                         else:
-                            vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec)    
+                            vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec)    
 
                         
                         msg = self.client.place_order(pair= self.pair,
@@ -542,9 +544,9 @@ class BotRunner:
                         self.stop_loss= round(close_dataF[-1]* (1- self.stop_loss_rate), self.asset_prec)
 
                         if self.leverage != None:
-                            vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
+                            vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
                         else:
-                            vol = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) 
+                            vol = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) 
                         
                         msg = self.client.place_order(pair= self.pair,
                                                 orderType= 'limit',
@@ -597,7 +599,7 @@ class BotRunner:
 
         strat()    
 
-    def algoStrat2(self, sma50, sma200):
+    def algoStrat2(self, sma50, sma200) -> None:
         self.save_graph = False
         df = pd.read_csv('{}{}Data.csv'.format(self.base, self.quote))
         high_dataF = np.array(df['High Data'])
@@ -650,24 +652,23 @@ class BotRunner:
                             self.trailing_stop = self.trailStop(self.trigger)
                 print("\tTrailing stop = {}".format(self.trailing_stop))
             
-
             #Start of the  trade strategy
             #If not in a posiion...
             #If price hits low bband and crosses low rsi point... buy and set stop loss
             if not self.HOLDING_LONG and not self.HOLDING_SHORT:
                 if self.bblow(bbandsDF, low_dataF) and self.rsi_crossLOW(rsiDF):
-                    #if self.bull_market(sma50, sma200):
                     self.stop_loss= round(close_dataF[-1]* (1- self.stop_loss_rate), self.asset_prec)
 
                     if self.leverage != None:
-                        self.VOLUME = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
+                        self.VOLUME = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) * self.leverage
                     else:
-                        self.VOLUME = round(self.client.get_cash_balance() * self.risk_rate / close_dataF[-1], self.base_prec) 
+                        self.VOLUME = round(self.client.get_portfolio_value() * self.risk_rate / close_dataF[-1], self.base_prec) 
                     
+                    print(self.client.get_portfolio_value())
                     #if market seems to be trending down, cut order volume to 1/3 usual amount 
                     if not self.bull_market(sma50, sma200):
-                        self.VOLUME = round(self.VOLUME * 0.33, self.asset_prec)
-                        
+                        self.VOLUME = round(self.VOLUME * 0.33, self.base_prec)
+                                    
 
                     msg = self.client.place_order(pair= self.pair,
                                             orderType= 'limit',
@@ -675,9 +676,10 @@ class BotRunner:
                                             volume= self.VOLUME,
                                             price= round(close_dataF[-1], self.asset_prec)
                                             )
+
                     time.sleep(15)
                     #if after 15 seconds the limit order has not been filled, replace the order with a market order
-                    while self.client.has_open_positions():
+                    while self.client.has_open_orders():
                         time.sleep(5)
                         self.client.cancel_order()
                         time.sleep(5)
@@ -690,81 +692,82 @@ class BotRunner:
                     self.DCA_VOLUME = 0
                     self.buySignals['dates'].append(dt.now().isoformat())
                     self.buySignals['prices'].append(round(close_dataF[-1], self.asset_prec))
-                    self.send_message("BBlow and RSI low...long buy\n" + str(msg))
                     self.HOLDING_LONG = True
                     self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now()) 
+                    self.send_message("BBlow and RSI low...long buy\n" + str(msg) +"\nAccount Value = " +str(self.accountValue['value'][-1]))
         
             elif self.HOLDING_LONG and not self.HOLDING_SHORT and self.DCA_VOLUME == 0:
                 if self.bbhigh(bbandsDF, high_dataF) and self.rsi_crossHIGH(rsiDF):
-                    #if high bband is hit and high rsi cross...
-                    self.trigger = close_dataF[-1]
-                    self.trailing_stop = self.trailStop(self.trigger)
-                    
-
-                    if not self.bull_market(sma50, sma200):
-                        #if the market seems to be trending down, sell the entire position
-                        msg = self.client.place_order(pair= self.pair,
-                                                orderType= 'limit',
-                                                _type= 'sell',
-                                                volume= self.VOLUME,
-                                                price= round(close_dataF[-1], self.asset_prec)
-                                                )
-
-                        time.sleep(15)
-                        #if after 15 seconds the limit order has not been filled, replace the order with a market order
-                        while self.client.has_open_positions():
-                            time.sleep(5)
-                            self.client.cancel_order()
-                            time.sleep(5)
+                    #if breaking even break even
+                    if close_dataF[-1] > self.buySignals['prices'][-1] * 1.0026:
+                        #if high bband is hit and high rsi cross...
+                        self.trigger = close_dataF[-1]
+                        self.trailing_stop = self.trailStop(self.trigger)
+                        
+                        if not self.bull_market(sma50, sma200):
+                            #if the market seems to be trending down, sell the entire position
                             msg = self.client.place_order(pair= self.pair,
-                                                orderType= 'market',
-                                                _type= 'sell',
-                                                volume= self.VOLUME
-                                                )
-                        self.save_graph = True
-                        self.VOLUME = 0
-                        self.accountValue['value'].append(self.client.get_portfolio_value())
-                        self.accountValue['dates'].append(dt.now())
-                        self.stop_loss = -1
-                        self.sellSignals['dates'].append(dt.now().isoformat())
-                        self.sellSignals['prices'].append(round(close_dataF[-1], self.asset_prec))
-                        self.HOLDING_LONG = False
-                        self.trailing_stop = -1
-                        self.trigger = -1  
-                        self.send_message("Closing 100%  of current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"%\nTrailing-Stop @..."+ str(self.trailing_stop) )
-                    else:
-                        #if the market seems to be trending up
-                        self.VOLUME = round(self.VOLUME * 0.6, self.base_prec) 
+                                                    orderType= 'limit',
+                                                    _type= 'sell',
+                                                    volume= self.VOLUME,
+                                                    price= round(close_dataF[-1], self.asset_prec)
+                                                    )
 
-                        msg = self.client.place_order(pair= self.pair,
-                                                orderType= 'limit',
-                                                _type= 'sell',
-                                                volume= self.VOLUME,
-                                                price= round(close_dataF[-1], self.asset_prec)
-                                                )
+                            time.sleep(15)
+                            #if after 15 seconds the limit order has not been filled, replace the order with a market order
+                            while self.client.has_open_orders():
+                                time.sleep(5)
+                                self.client.cancel_order()
+                                time.sleep(5)
+                                msg = self.client.place_order(pair= self.pair,
+                                                    orderType= 'market',
+                                                    _type= 'sell',
+                                                    volume= self.VOLUME
+                                                    )
+                            self.save_graph = True
+                            self.VOLUME = 0
+                            self.accountValue['value'].append(self.client.get_portfolio_value())
+                            self.accountValue['dates'].append(dt.now())
+                            self.stop_loss = -1
+                            self.sellSignals['dates'].append(dt.now().isoformat())
+                            self.sellSignals['prices'].append(round(close_dataF[-1], self.asset_prec))
+                            self.HOLDING_LONG = False
+                            self.trailing_stop = -1
+                            self.trigger = -1  
+                            self.send_message("Closing 100%  of current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"\nAccount Value = " +str(self.accountValue['value'][-1]) )
+                        else:
+                            #if the market seems to be trending up
+                            self.VOLUME = round(self.VOLUME * 0.6, self.base_prec) 
 
-                        time.sleep(15)
-                        #if after 15 seconds the limit order has not been filled, replace the order with a market order
-                        while self.client.has_open_positions():
-                            time.sleep(5)
-                            self.client.cancel_order()
-                            time.sleep(5)
                             msg = self.client.place_order(pair= self.pair,
-                                                orderType= 'market',
-                                                _type= 'sell',
-                                                volume= self.VOLUME
-                                                )  
+                                                    orderType= 'limit',
+                                                    _type= 'sell',
+                                                    volume= self.VOLUME,
+                                                    price= round(close_dataF[-1], self.asset_prec)
+                                                    )
 
-                        self.send_message("Closing 60%  of current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"%\nTrailing-Stop @..."+ str(self.trailing_stop) )
-                        self.save_graph = True
-                        self.accountValue['value'].append(self.client.get_portfolio_value())
-                        self.accountValue['dates'].append(dt.now())
-                        self.DCA_VOLUME = 1
+                            time.sleep(15)
+                            #if after 15 seconds the limit order has not been filled, replace the order with a market order
+                            while self.client.has_open_positions():
+                                time.sleep(5)
+                                self.client.cancel_order()
+                                time.sleep(5)
+                                msg = self.client.place_order(pair= self.pair,
+                                                    orderType= 'market',
+                                                    _type= 'sell',
+                                                    volume= self.VOLUME
+                                                    )  
+
+                            self.send_message("Closing 60%  of current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"%\nTrailing-Stop @..."+ str(self.trailing_stop)  +"\nAccount Value = " +str(self.accountValue['value'][-1]))
+                            self.save_graph = True
+                            self.accountValue['value'].append(self.client.get_portfolio_value())
+                            self.accountValue['dates'].append(dt.now())
+                            self.DCA_VOLUME = 1
 
             if (low_dataF[-1] <= self.stop_loss and high_dataF[-1] >= self.stop_loss)  or (low_dataF[-1] <= self.trailing_stop and high_dataF[-1] >= self.trailing_stop):
                 if self.HOLDING_LONG:
-                    msg = msg = self.client.place_order(pair= self.pair,
+                    msg = self.client.place_order(pair= self.pair,
                                             orderType= 'limit',
                                             _type= 'sell',
                                             volume= self.VOLUME,
@@ -772,8 +775,7 @@ class BotRunner:
                                             )
                     self.save_graph = True
                     self.VOLUME = 0
-                    self.send_message("Closing current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"%")
-                    self.accountValue['value'].append(self.client.get_cash_balance())
+                    self.accountValue['value'].append(self.client.get_portfolio_value())
                     self.accountValue['dates'].append(dt.now())
                     self.stop_loss= -1
                     self.sellSignals['dates'].append(dt.now().isoformat())
@@ -782,54 +784,56 @@ class BotRunner:
                     self.trailing_stop = -1
                     self.trigger = -1
                     self.DCA_VOLUME = 0
-              
-                    
+                    self.send_message("Closing current position...\n"+ str(msg) + "\nPosition P/L..." + str(gain) +"%"  +"\nAccount Value = " +str(self.accountValue['value'][-1]))
+
             print('7 seconds sleep')
             print("------------------------------------")
 
         strat()
 
     def run(self):
-            try:
-                while True:
-                    self.write_candles()
+        try:
+            while True:
+                self.write_candles()
 
-                    df = pd.read_csv('{}{}Data.csv'.format(self.base, self.quote))
-                    sma50DF = ta.sma(close=df['Close Data'], length=50)
-                    sma200DF = ta.sma(close=df['Close Data'], length=200)
-                    
-                    if self.bull_market(sma50DF, sma200DF):
-                        print('\tBULL MARKET({})'.format(self.pair))
-                        #self.bull_strategy()
-                    else:
-                        print('\tBEAR MARKET({})'.format(self.pair))
-                        #self.bear_strategy()
-                    
-                    self.algoStrat2(sma50DF, sma200DF)
+                df = pd.read_csv('{}{}Data.csv'.format(self.base, self.quote))
+                sma50DF = ta.sma(close=df['Close Data'], length=50)
+                sma200DF = ta.sma(close=df['Close Data'], length=200)
 
-                    if self.save_graph:
-                        df2 = pd.read_csv("{}{}Profit.csv".format(self.base, self.quote))
-                        dates = list(np.array(df2["Dates"]))
-                        values = list(np.array(df2["Values"]))
-                        for date in self.accountValue['dates']:
-                            dates.append(date)
-                        for value in self.accountValue['value']:
-                            values.append(value)
-                        
-                        data = {'Dates': dates,
-                                'Values': values,
-                                }
+                if self.bull_market(sma50DF, sma200DF):
+                    print('\tBULL MARKET({} {})'.format(self.pair, self.time_frame))
+                    #self.bull_strategy()
+                else:
+                    print('\tBEAR MARKET({} {})'.format(self.pair, self.time_frame))
+                    #self.bear_strategy()
 
-                        df3 = pd.DataFrame(data)
-                        df3.to_csv("{}{}Profit.csv".format(self.baseAsset, self.quoteAsset), index = False)
+                self.algoStrat2(sma50DF, sma200DF)
+
+                if self.save_graph:
+                    df2 = pd.read_csv("AccountValue.csv")
+                    dates = list(np.array(df2["Dates"]))
+                    values = list(np.array(df2["Values"]))
+                    for date in self.accountValue['dates']:
+                        dates.append(date)
+                    for value in self.accountValue['value']:
+                        values.append(value)
+
+                    data = {'Dates': dates,
+                            'Values': values,
+                            }
+
+                    df3 = pd.DataFrame(data)
+                    df3.to_csv("AccountValue.csv", index = False)
 
 
-                        fig2 = go.Figure()
+                    fig2 = go.Figure()
 
-                        fig2.add_scatter(x= dates, y= values, mode='lines+markers')
+                    fig2.add_scatter(x= dates, y= values, mode='lines+markers')
 
-                        fig2.write_html("{}{}Profit.html".format(self.base, self.quote))
-                    time.sleep(7)
-            except Exception as e:
-                print(e)
-                self.webhook.send("ERROR: " + str(e))
+                    fig2.write_html("AccountValue.html")
+                time.sleep(7)
+
+        except Exception as e:
+            print(e)
+            self.webhook.send("ERROR: " + str(e))
+        
