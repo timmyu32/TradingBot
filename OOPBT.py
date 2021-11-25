@@ -9,7 +9,7 @@ class BackTest:
             self.exchange = exchange
             self.baseAsset = baseAsset
             self.quoteAsset = quoteAsset
-            self.interval = interval
+            self.interval = interval 
             self.startTime = startTime
             self.client = shrimpy.ShrimpyApiClient(self.public_key, self.secret_key)
             
@@ -23,9 +23,21 @@ class BackTest:
             
             return stables
 
-            
+        def get_candle_data(self):
+            candles = self.client.get_candles(
+                    self.exchange,
+                    self.baseAsset,
+                    self.quoteAsset,
+                    self.interval,
+                    start_time= self.startTime
+                )
+            #print(candles)
+            return candles
+
+
 
         def write_candle_data(self):
+            #try:
             candles = self.client.get_candles(
                 self.exchange,
                 self.baseAsset,
@@ -43,6 +55,7 @@ class BackTest:
 
             # convert from the Shrimpy candlesticks to the plotly graph objects format
             for candle in candles:
+                print(candle)
                 dates.append(candle['time'])
                 open_data.append(candle['open'])
                 high_data.append(candle['high'])
@@ -58,3 +71,6 @@ class BackTest:
 
             df = pd.DataFrame(data)
             df.to_csv("{}{}Data.csv".format(self.baseAsset, self.quoteAsset), index = False)
+            #except Exception as e:
+            #    print(e)
+            #    print("Error in OOPBT.Backtest.write_candle_data()")
