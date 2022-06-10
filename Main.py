@@ -9,7 +9,7 @@ SHRIMPY_PRIVATE_KEY = ###
 WEBHOOK_URL = ###
 
 if __name__ == "__main__":
-    CryptoBot = Runner.BotRunner('BTC',
+    CryptoBot = Runner.BotRunner('ADA',
                                 'USD',
                                 KRAKEN_API_KEY,
                                 KRAKEN_PRIVATE_KEY,
